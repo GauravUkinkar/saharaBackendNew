@@ -31,6 +31,9 @@ public class ImagesServiceImpl implements ImagesService {
 
 	@Value("${spring.servlet.multipart.location}")
 	private String uploadDirectory;
+	
+    private static final String UPLOAD_DIR = "/var/www/html/images/sahara";
+
 
 	private final ImageRepository imageRepository;
 	@Override

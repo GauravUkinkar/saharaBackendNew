@@ -26,7 +26,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 @RestController
-@RequestMapping("/images")
+@RequestMapping("/MediaController")
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 @Log4j2
@@ -34,7 +34,7 @@ public class MediaController {
 
     private final ImagesService imagesService;
 
-    @PostMapping(value = "/images/uploadSingle", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/MediaController/uploadImage", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Message<ImagesDto>> uploadSingleImage(
             @RequestPart("file") MultipartFile file) {
 
@@ -47,7 +47,7 @@ public class MediaController {
     }
 
 
-    @GetMapping("/getAllImages")
+    @GetMapping("/getAllImage")
     public ResponseEntity<Message<List<ImagesDto>>> getAllImages() {
 
         Message<List<ImagesDto>> response = imagesService.getAllImages();

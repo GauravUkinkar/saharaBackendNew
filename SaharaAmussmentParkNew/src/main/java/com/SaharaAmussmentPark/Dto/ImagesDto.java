@@ -1,6 +1,8 @@
 package com.SaharaAmussmentPark.Dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 
@@ -8,6 +10,8 @@ import lombok.experimental.Accessors;
 @ToString 
 @Accessors(chain = true)
 
+@NoArgsConstructor
+@AllArgsConstructor
 public class ImagesDto {
 	private int iId;
 	private String images;

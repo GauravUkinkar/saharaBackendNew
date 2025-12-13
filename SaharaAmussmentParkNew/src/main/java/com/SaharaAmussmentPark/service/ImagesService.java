@@ -10,7 +10,7 @@ import com.SaharaAmussmentPark.Dto.Message;
 
 public interface ImagesService {
 
-	public Message<List<ImagesDto>> uploadImages(MultipartFile[] files, ImagesDto request);
+	public Message<ImagesDto> uploadImage(MultipartFile file);
     public Message<List<ImagesDto>> getAllImages();
     public Message<List<ImagesDto>> getByImageName(String imageName) ;
     public Message<ImagesDto> deleteImages(int iId);

@@ -21,7 +21,7 @@ public class SwaggerConfig {
 	            .version("1.0")
 	            .description("API documentation for Coffie Project"))
 	        .servers(List.of(
-	                    new Server().url("http://localhost:9000").description("Deployed Server")
+	                    new Server().url("http://localhost:8080").description("Deployed Server")
 	                ));
 	}
 

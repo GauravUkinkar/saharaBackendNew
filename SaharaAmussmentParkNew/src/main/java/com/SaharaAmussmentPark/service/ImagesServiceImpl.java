@@ -33,61 +33,54 @@ public class ImagesServiceImpl implements ImagesService {
 	private String uploadDirectory;
 
 	private final ImageRepository imageRepository;
-
 	@Override
-	public Message<List<ImagesDto>> uploadImages(MultipartFile[] files, ImagesDto request) {
+	public Message<ImagesDto> uploadImage(MultipartFile file) {
+	    Message<ImagesDto> response = new Message<>();
 
-	    Message<List<ImagesDto>> response = new Message<>();
-
-	    if (files == null || files.length == 0) {
+	    if (file == null || file.isEmpty()) {
 	        response.setStatus(HttpStatus.BAD_REQUEST);
-	        response.setResponseMessage("No files received");
+	        response.setResponseMessage("No file received");
 	        return response;
 	    }
 
-	    List<ImagesDto> imagesList = new ArrayList<>();
-
 	    try {
-	        for (MultipartFile file : files) {
-
-	            if (file == null || file.isEmpty()) {
-	                continue;
-	            }
-	            if (!isImage(file)) {
-	                continue;
-	            }
-
-	            String imageUrl = uploadFile(file);
-
-	            Images image = new Images();
-	            image.setImageName(file.getOriginalFilename());
-	            image.setImageName(imageUrl);
-	          
-
-	            imageRepository.save(image);
-
-	            // Prepare DTO
-	            ImagesDto dto = new ImagesDto();
-	            dto.setImageName(image.getImageName());
-	            dto.setImages(imageUrl);
-
-	            imagesList.add(dto);
-	        }
-
-	        if (imagesList.isEmpty()) {
+	        if (!isImage(file)) {
 	            response.setStatus(HttpStatus.BAD_REQUEST);
-	            response.setResponseMessage("No valid images uploaded");
+	            response.setResponseMessage("Invalid image file");
 	            return response;
 	        }
+	        String originalName = file.getOriginalFilename();
+	        String sanitizedName = originalName
+	                .replaceAll("\\s+", "_")       
+	                .replaceAll("[^a-zA-Z0-9._-]", ""); 
+	        String finalName = System.currentTimeMillis() + "_" + sanitizedName;
+
+	        Path uploadPath = Paths.get(uploadDirectory).toAbsolutePath().normalize();
+	        Files.createDirectories(uploadPath);
+
+	        Path filePath = uploadPath.resolve(finalName);
+	        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+	        Images image = new Images();
+	        image.setImageName(sanitizedName); 
+	        image.setImages("https://media.saharaamusement.com/sahara/" + finalName);
+
+	        imageRepository.save(image);
+
+	        ImagesDto dto = new ImagesDto();
+	        dto.setIId(image.getIId());
+	        dto.setImageName(image.getImageName());
+	        dto.setImages(image.getImages());
 
 	        response.setStatus(HttpStatus.OK);
-	        response.setResponseMessage("Images uploaded successfully");
-	        response.setData(imagesList);
+	        response.setResponseMessage("Image uploaded successfully");
+	        response.setData(dto);
+
 	        return response;
 
 	    } catch (IOException ex) {
 	        response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
-	        response.setResponseMessage("Image upload failed");
+	        response.setResponseMessage("Image upload failed: " + ex.getMessage());
 	        return response;
 	    }
 	}

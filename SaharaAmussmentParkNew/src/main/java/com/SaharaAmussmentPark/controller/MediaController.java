@@ -1,6 +1,7 @@
 package com.SaharaAmussmentPark.controller;
 
 import java.io.IOException;
+import org.springframework.http.MediaType;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,6 +21,7 @@ import com.SaharaAmussmentPark.Dto.ImagesDto;
 import com.SaharaAmussmentPark.Dto.Message;
 import com.SaharaAmussmentPark.service.ImagesService;
 
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
@@ -31,11 +34,15 @@ public class MediaController {
 
     @Autowired
     private ImagesService imagesService;
-    @PostMapping("/upload")
+    @PostMapping(
+            value = "/upload",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
     public ResponseEntity<Message<List<ImagesDto>>> uploadImages(
-            @RequestParam("files") MultipartFile[] files) throws IOException {
+            @RequestPart("data") ImagesDto request,
+            @RequestPart("files") MultipartFile[] files) {
 
-        Message<List<ImagesDto>> response = imagesService.uploadImages(files);
+        Message<List<ImagesDto>> response = imagesService.uploadImages(files, request);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
     

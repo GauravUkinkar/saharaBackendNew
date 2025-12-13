@@ -1,6 +1,8 @@
 package com.SaharaAmussmentPark.service;
 
 import java.io.IOException;
+import org.springframework.util.StringUtils;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -8,6 +10,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -26,69 +29,95 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ImagesServiceImpl implements ImagesService {
 
-    @Value("${spring.servlet.multipart.location}")
-    private String uploadDirectory;
-    private final ImageRepository imageRepository;
-    @Override
-    public Message<List<ImagesDto>> uploadImages(MultipartFile[] files) throws IOException {
+	@Value("${spring.servlet.multipart.location}")
+	private String uploadDirectory;
 
-        Message<List<ImagesDto>> response = new Message<>();
+	private final ImageRepository imageRepository;
 
-        if (files == null || files.length == 0) {
-            response.setStatus(HttpStatus.BAD_REQUEST);
-            response.setResponseMessage("No files received");
-            response.setData(null);
-            return response;
-        }
+	@Override
+	public Message<List<ImagesDto>> uploadImages(MultipartFile[] files, ImagesDto request) {
 
-        List<ImagesDto> imagesList = new ArrayList<>();
+	    Message<List<ImagesDto>> response = new Message<>();
 
-        for (MultipartFile file : files) {
+	    if (files == null || files.length == 0) {
+	        response.setStatus(HttpStatus.BAD_REQUEST);
+	        response.setResponseMessage("No files received");
+	        return response;
+	    }
 
-            if (file == null || file.isEmpty()) {
-                continue;
-            }
+	    List<ImagesDto> imagesList = new ArrayList<>();
 
-            String imageUrl = uploadFile(file);
+	    try {
+	        for (MultipartFile file : files) {
 
-            ImagesDto dto = new ImagesDto()
-                    .setImageName(file.getOriginalFilename())
-                    .setImages(imageUrl);
+	            if (file == null || file.isEmpty()) {
+	                continue;
+	            }
+	            if (!isImage(file)) {
+	                continue;
+	            }
 
-            imagesList.add(dto);
-        }
+	            String imageUrl = uploadFile(file);
 
-        if (imagesList.isEmpty()) {
-            response.setStatus(HttpStatus.BAD_REQUEST);
-            response.setResponseMessage("No valid images uploaded");
-            response.setData(null);
-            return response;
-        }
+	            Images image = new Images();
+	            image.setImageName(file.getOriginalFilename());
+	            image.setImageName(imageUrl);
+	          
 
-        response.setStatus(HttpStatus.OK);
-        response.setResponseMessage("Images uploaded successfully");
-        response.setData(imagesList);
+	            imageRepository.save(image);
 
-        return response;
-    }
+	            // Prepare DTO
+	            ImagesDto dto = new ImagesDto();
+	            dto.setImageName(image.getImageName());
+	            dto.setImages(imageUrl);
+
+	            imagesList.add(dto);
+	        }
+
+	        if (imagesList.isEmpty()) {
+	            response.setStatus(HttpStatus.BAD_REQUEST);
+	            response.setResponseMessage("No valid images uploaded");
+	            return response;
+	        }
+
+	        response.setStatus(HttpStatus.OK);
+	        response.setResponseMessage("Images uploaded successfully");
+	        response.setData(imagesList);
+	        return response;
+
+	    } catch (IOException ex) {
+	        response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+	        response.setResponseMessage("Image upload failed");
+	        return response;
+	    }
+	}
 
 
+	private String uploadFile(MultipartFile file) throws IOException {
 
-    private String uploadFile(MultipartFile file) throws IOException {
+	    String originalFilename = StringUtils.cleanPath(
+	            Objects.requireNonNull(file.getOriginalFilename())
+	    );
 
-        String originalFilename = file.getOriginalFilename();
-        String fileName = System.currentTimeMillis() + "_" + originalFilename;
+	    String fileName = System.currentTimeMillis() + "_" + originalFilename;
 
-        Path uploadPath = Paths.get(uploadDirectory);
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);
-        }
+	    Path uploadPath = Paths.get(uploadDirectory).toAbsolutePath().normalize();
+	    Files.createDirectories(uploadPath);
 
-        Path filePath = uploadPath.resolve(fileName);
-        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+	    Path filePath = uploadPath.resolve(fileName);
+	    if (!filePath.startsWith(uploadPath)) {
+	        throw new IOException("Invalid file path");
+	    }
 
-        return "https://media.saharaamusement.com/sahara/" + fileName;
-    }
+	    Files.copy(
+	            file.getInputStream(),
+	            filePath,
+	            StandardCopyOption.REPLACE_EXISTING
+	    );
+
+	    return "https://media.saharaamusement.com/sahara/" + fileName;
+	}
+
 
 
     @Override
@@ -195,5 +224,20 @@ public class ImagesServiceImpl implements ImagesService {
 		}
 		
 	}
+	private boolean isImage(MultipartFile file) {
+
+	    if (file == null || file.isEmpty()) {
+	        return false;
+	    }
+
+	    String contentType = file.getContentType();
+
+	    return contentType != null &&
+	           (contentType.equalsIgnoreCase("image/jpeg") ||
+	            contentType.equalsIgnoreCase("image/png") ||
+	            contentType.equalsIgnoreCase("image/jpg") ||
+	            contentType.equalsIgnoreCase("image/webp"));
+	}
+
 }
 

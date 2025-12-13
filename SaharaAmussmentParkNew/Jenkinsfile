@@ -1,0 +1,76 @@
+pipeline {
+    agent any
+
+    tools {
+        maven 'Maven' // Ensure Maven is configured under Global Tool Configuration
+        jdk 'java17' // Use your inbuilt Java version
+    }
+
+    environment {
+        MAVEN_OPTS = '-Dmaven.test.failure.ignore=true'
+        DEPLOY_PATH = '/opt/tomcat/webapps/' // Change to your Tomcat webapps folder
+        WAR_NAME = 'saharaAmmusment.war' // Replace with your desired WAR file name
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git branch: 'master', credentialsId: 'githubToken', url: 'https://github.com/alex2922/saharaBackend.git'
+            }
+        }
+
+        stage('Build Project') {
+            steps {
+                sh 'mvn -f SaharaAmussmentParkNew/pom.xml clean install -DskipTests'
+            }
+        }
+
+        stage('Deploy to VPS') {
+            steps {
+                script {
+                    // Check if the WAR file already exists and remove it
+                    sh '''
+                        if [ -f $DEPLOY_PATH$WAR_NAME ]; then
+                            echo "Removing old WAR file"
+                             rm -f $DEPLOY_PATH$WAR_NAME
+                        fi
+                    '''
+                    // Copy the new WAR file to the Tomcat webapps directory
+                    sh '''
+                         cp SaharaAmussmentParkNew/target/$WAR_NAME $DEPLOY_PATH
+                    '''
+                }
+            }
+        }
+
+        stage('Restart Tomcat') {
+            steps {
+                script {
+                    // Restart Tomcat locally (on the same VPS)
+                    sh '''
+                        cd /opt/tomcat/bin
+                        echo tomcat shutdown
+                        ./shutdown.sh
+                    '''
+                    
+                    sh '''
+                        cd /opt/tomcat/bin
+                        ./startup.sh
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline execution completed.'
+        }
+        success {
+            echo 'Build and Deployment succeeded!'
+        }
+        failure {
+            echo 'Build or Deployment failed.'
+        }
+    }
+}

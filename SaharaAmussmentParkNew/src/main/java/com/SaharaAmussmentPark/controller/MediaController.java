@@ -34,7 +34,7 @@ public class MediaController {
 
     private final ImagesService imagesService;
 
-    @PostMapping(value = "/MediaController/uploadImage", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/uploadImage", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Message<ImagesDto>> uploadSingleImage(
             @RequestPart("file") MultipartFile file) {
 
